@@ -1,0 +1,7 @@
+3
+1.2 1.1
+greater
+0.3 0.4
+less
+asd fee
+Please enter an string that start with number or -/+ sign and only include number after first character for the first input
