@@ -1,3 +1,7 @@
+# This module is fully created by Ching Chuan Wu from scratch.
+# It is part of coding challenge for Ormuco Inc. Hiring process.
+# © Copyright 2020, Ching Chuan Wu, All Rights Reserved
+
 import socket, pickle
 import threading
 import time

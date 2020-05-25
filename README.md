@@ -57,7 +57,7 @@ The following is the test case in QuestionA.txt and their explanations:<br>
 
 Question B
 ---
-The function implemented for this question is in QuestionB.py. The greaterthan function take is two string a and b and return the string "equal" if a equal b, "greater" if a is greater than b, "less" if a is less than b, or "Please enter an string that start with number or -/+ sign and only include number after first character for the second/first input" if either a or b is in the wrong form (not number). In addition, the function also handle positive and negative number by allowing user to input in the form of +number, -number or number<br>
+The function implemented for this question is in QuestionB.py. The greaterthan function takes in two string a and b and return the string "equal" if a equal b, "greater" if a is greater than b, "less" if a is less than b, or "Please enter an string that start with number or -/+ sign and only include number after first character for the second/first input" if either a or b is in the wrong form (not number). In addition, the function also handle positive and negative number by allowing user to input in the form of +number, -number, or number<br>
 
 The test for this function is implemented in Ching_Chuan_Wu_test.py. The script reads in test case from QuestionB.txt. QuestionB.txt is in the format of the following:<br>
 number_of_testcase<br>
@@ -88,7 +88,7 @@ greater ------------ a is greater than b. It covers edge case of infinity which 
 
 Question C
 ---
-The library is implemented in QuestionC.py. The idea is based on my understanding that cache is used to retrieve data from memory rather than disk for faster retrieval. Thus, my library will define the cache on memory stack that can be retrieve before the function goes to disk to get the data. The usage are as following:<br>
+The library is implemented in QuestionC.py. The idea is based on my understanding that cache is used to retrieve data from memory rather than disk for faster retrieval. Thus, my library will define the cache on memory stack that can be retrieved before the function goes to disk to get the data. The usage are as following:<br>
 1. import the library
     ```
     import QuestionC
@@ -97,7 +97,11 @@ The library is implemented in QuestionC.py. The idea is based on my understandin
     ```
     server_cache = QuestionC.server_cache()
     ```
-    By default, server_cache class will be initialized with (max_size=5, othersevers=None,server_port=83, limit=10, expire=5) where max_size is the maximum number of cache that the server hold, otherservers are list of other servers currently running online (in form of tuple: (ip,port)), server_port is the port that the cache server listen for incoming request, limit is the time limit on every socket operation in second, and expire is time that each cash live in the system in minutes. By default, the cache server can be initialize with no input for the first server. However, the field otherservers need to be provided for additional server so that it communicate with previously established server.<br>
+    By default, server_cache class will be initialized with (max_size=5, othersevers=None,server_port=83, limit=10, expire=5) where max_size is the maximum number of cache that the server hold, otherservers are list of other servers currently running online (in form of tuple: (ip,port)), server_port is the port that the cache server listen for incoming request, limit is the time limit on every socket operation in second, and expire is time that each cash live in the system in minutes. By default, the cache server can be initialize with no input for the first server. However, the field otherservers need to be provided for additional server so that it communicate with previously established server. The overall workflow for the initialization are the following:<br>
+    1. ALl fields in the class are initialized with the input or default value
+    2. A child thread is created to listen on incoming request from other server using the same cache library
+    3. If otherservers field is provided, it then notify all servers currently online using the provided ip address and port number so that all other server register this newly created server.
+    4. It also get cache from other server so that the cache are consistence across all server. As a result, if we have server1 running already with cache for get_string function stored and we create server2 with ip address and port number of the cache server running on server1, then the cache server running on server2 will have the same cache store in memory as server1 even server2 have not yet received any request.<br>
 3. Allow the server to use the cache server in the function that it provides. In the following, we assume that the library is used with a server that allows client to call get_string function provided by the server.
     ```
     def get_string():
@@ -112,8 +116,8 @@ The library is implemented in QuestionC.py. The idea is based on my understandin
         server_cache.add_cache(lookup, "get_string")
         return lookup
     ```
-    Here, get_string is a function that run on the server which listen for client to call get_string function. When the function is called, it first search in the cache using server_cache.find_cache (sever_cache is initialized in step 2, usually when the server came online and start running). If what the function return is in the cache already, the function just return what it got in the cache. otherwise, it go ahead and retrieve data. After it did the expensive data retrieval, it then add the data to the cache using server_cache.add_cache so that next time when the same function is called, the data can be acquired from cache.
-4. Finally, we stop the cache when we want to stop the server
+    Here, get_string is a function that run on the server which listen for client to call get_string function. When the function is called, it first search in the cache using server_cache.find_cache (sever_cache is initialized in step 2, usually when the server came online and start running). If what the function return is in the cache already, the function just return what it got in the cache. otherwise, it go ahead and retrieve data. After it did the expensive data retrieval, it then add the data to the cache using server_cache.add_cache so that next time when the same function is called, the data can be acquired from cache. In addition, the same cached is sent to other servers currently running for data consistency across servers.<br>
+4. Finally, we stop the cache when we want to stop the server<br>
     ```
     server_cache.stop_listen()
     ```
@@ -152,16 +156,22 @@ Similar with question A and B, question C is also tested in Ching_Chuan_Wu_test.
 7. The server2 then received get_string request (also read from Server2.txt as input).<br>
 8. Then the data is get from cache because the same function have been called on server1<br>
 9. server2 then shut down itself.<br>
-10. server1 then received get_string request again and return the data from teh cache.<br>
+10. server1 then received get_string request again and return the data from the cache.<br>
 11. server1  then shut down itself.<br>
     
 <br>
 To test question C manually, simply delete Server1.txt. Than running server1.py (python server1.py) will prompt for listening for input. Note that after the first call of get_string, server2 will start too. Deleting the Server2.txt will also allows you to input the request and control the flow. Note that the valid input for server1 and server2 are get_string, wait, and exit<br>
+<br>
+In addition, I have to mentioned that the [('10.0.0.134', 83)] used to initialize server cache on server2 will attempt to connect to the provided ip address and port. However, those are the ip of my machine and port that I used to initialized server cache on server1. Note that the server_cache will prompt you with the ip address and port it is running on when initialized. Please change the ip and port accordingly when initialized 2nd or more serve_cache.<br>
 
 Ching_Chuan_Wu_test.py
 ---
-Running this script (python Ching_Chuan_Wu_test.py) will simply run through the test case for all question. It will then print the result out in the terminal. You can follow on what happened by simply read through the log that have been printed out. For question A and B, the test case can be changed by changing QuestionA.txt and QuestionB.txt (Please read the section Question A and Question B above for what format the text file should be). The test for Question C can not be changed but the manual testing can be done by running server1.py and server2.py manually. 
+Running this script (python Ching_Chuan_Wu_test.py) will simply run through the test case for all question. It will then print the result out in the terminal. You can follow on what happened by simply read through the log that have been printed out. For question A and B, the test case can be changed by changing QuestionA.txt and QuestionB.txt (Please read the section Question A and Question B above for what format the text file should be). The test for Question C cannot be changed but the manual testing can be done by running server1.py and server2.py manually without Server1.txt and Server2.txt. 
 
 Disclaimer
 ---
+I take pride in all code that I wrote. Especially for Question C, I only used standard library such as socket, pickle, threading, time, and datetime. All the logic for storing cache in memory stack, having cache to expire, the whole infrastructure is original. Even the queue that is implemented by linked list which is implemented by node which is the class that I created is implemented without using any 3rd party library. This is truely a build from nothing project. In other words, I only needed a computer with internet connection to build all these. Consider I never used socket module in python (I got some experince writing server and client code in C++ using RPC library) and multi-threading in python (also have some experience in C for multi-threading), I am proud of what I have created especially it only took me 4 days. You are free to use the code for personal project but please let me know if you do so. However, you are not allow to distribute the code without my acknowledge. The project might also be further updated in future for better functionality and efficiency. Please don't hesitate to contact me if you have any recommendation of what to change!<br>
 
+You can find my through email: 0429charlie@gmail.com
+
+© Copyright 2020, Ching Chuan Wu, All Rights Reserved
