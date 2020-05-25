@@ -1,7 +1,19 @@
-3
+9
 1.2 1.1
 greater
 0.3 0.4
 less
 asd fee
 Please enter an string that start with number or -/+ sign and only include number after first character for the first input
+-2 3
+less
++2 +2
+equal
+-2 -1
+less
+-22 +asdf
+Please enter an string that start with number or -/+ sign and only include number after first character for the second input
+-asd 4
+Please enter an string that start with number or -/+ sign and only include number after first character for the first input
++inf -inf
+greater

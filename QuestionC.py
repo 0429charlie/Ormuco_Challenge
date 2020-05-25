@@ -2,6 +2,7 @@ import socket, pickle
 import threading
 import time
 
+from datetime import datetime
 from threading import Thread
 
 
@@ -18,6 +19,7 @@ class Node:
         self.content = None
         self.key = None
         self.fn_name = None
+        self.timestemp = None
 
 
 # The queue is consisted of nodes in the form of linked list
@@ -26,11 +28,12 @@ class Node:
 # The class also initialized socket binded on given port (83 by default) which can later be used to listen for incoming request
 class server_cache:
     # Initialization. It create new thread that listening for incoming request, Initialize all fields, and send notification to other server to register itself.
-    def __init__(self, max_size=5, othersevers=None,server_port=83, limit=10):
+    def __init__(self, max_size=5, othersevers=None,server_port=83, limit=10, expire=5):
         self.listening = True
         self.head = None
         self.tail = None
         self.max_size = max_size
+        self.expire = expire
         # from object id to node holding that object
         self.mapping = {}
         self.allservers = othersevers
@@ -145,6 +148,7 @@ class server_cache:
                 n.content = inobject
                 n.key = objectid
                 n.fn_name = fn_name
+                n.timestemp = datetime.now()
                 # But first, let see if we have anything in the cache first
                 # If we have empty cache
                 if len(self.mapping)==0:
@@ -171,6 +175,31 @@ class server_cache:
         finally:
             self.queue_lock.release()
 
+    # Function to delete the expired node
+    def del_node(self,objectid):
+        n = self.mapping[objectid]
+        if n.head and n.tail:
+            # Actually, we don't need to do anything here
+            # Simply del this node from self.mapping will works
+            pass
+        if n.head:
+            self.head = n.next
+            self.head.pre = None
+            n.next = None
+            n.head = False
+        if n.tail:
+            self.tail = n.pre
+            self.tail.next = None
+            n.pre = None
+            n.tail = False
+        else:
+            n.pre.next = n.next
+            n.next.pre = n.pre
+            n.pre = None
+            n.next = None
+        # Also delete from self.mapping
+        del self.mapping[objectid]
+
     # Function to find the requested object given the object id
     # Note that object id can be acquired from self.dic[key] where key is the function name
     # It must be called before every time the function that use this cache server in the user written program execute it expensive calculation
@@ -178,7 +207,17 @@ class server_cache:
     def find_cache(self,objectid):
         # Hit
         if objectid in self.mapping:
-            return self.mapping[objectid].content
+            # Check timestemp
+            n = self.mapping[objectid]
+            time_difference = datetime.now() - n.timestemp
+            in_second = time_difference.total_seconds()
+            in_minute = in_second / 60
+            # Delete the node if expired
+            if in_minute >= self.expire:
+                self.del_node(objectid)
+                return None
+            else:
+                return self.mapping[objectid].content
         # Miss
         else:
             return None
